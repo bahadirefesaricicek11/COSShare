@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>COSShare - Download File</title>
+  <script>
+    // Automatically bypass localtunnel reminder page programmatically
+    if (!sessionStorage.getItem('bypassed_lt')) {
+      sessionStorage.setItem('bypassed_lt', '1');
+      fetch(window.location.href, {
+        headers: { 'bypass-tunnel-reminder': 'true' }
+      }).then(() => location.reload());
+    }
+  </script>
+  <style>
+    :root {
+      --background: #090a0f;
+      --card: #12141d;
+      --border: #26293b;
+      --foreground: #f1f5f9;
+      --muted: #94a3b8;
+      --primary: #818cf8;
+      --primary-bg: rgba(129, 140, 248, 0.1);
+      --emerald: #34d399;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 400px;
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      padding: 28px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .file-icon {
+      font-size: 44px;
+      margin-bottom: 8px;
+    }
+
+    .file-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--foreground);
+      word-break: break-all;
+      margin-bottom: 4px;
+    }
+
+    .file-size {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .btn-download {
+      display: inline-block;
+      width: 100%;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background-color: var(--primary-bg);
+      color: var(--foreground);
+      transition: all 0.2s;
+    }
+
+    .btn-download:hover {
+      background-color: rgba(129, 140, 248, 0.2);
+      border-color: var(--primary);
+    }
+
+    .security-note {
+      margin-top: 18px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* Language Switcher */
+    .lang-switch {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      cursor: pointer;
+    }
+
+    .lang-btn.active {
+      background: var(--border);
+      color: var(--foreground);
+    }
+  </style>
+</head>
+<body>
+  <div class="lang-switch">
+    <button class="lang-btn" id="btnEN">EN</button>
+    <button class="lang-btn" id="btnTR">TR</button>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">COSShare Direct Transfer</p>
+    <div class="file-icon" id="typeIcon">📄</div>
+    <div class="file-name" id="fileName">Loading...</div>
+    <div class="file-size" id="fileSize">-- MB</div>
+
+    <a href="/download" class="btn-download" id="downloadBtn">
+      <span data-i18n="downloadBtn">Download File</span>
+    </a>
+
+    <div class="security-note">
+      🔒 <span data-i18n="p2pNote">Direct P2P Stream • No server storage</span>
+    </div>
+  </div>
+
+  <script>
+    const i18n = {
+      en: {
+        downloadBtn: "Download File",
+        p2pNote: "Direct P2P Stream • No server storage",
+        hostDisconnected: "Host disconnected or file unavailable."
+      },
+      tr: {
+        downloadBtn: "Dosyayı İndir",
+        p2pNote: "Doğrudan P2P Aktarım • Sunucu kaydı yok",
+        hostDisconnected: "Kaynak bağlantısı kesildi veya dosya bulunamadı."
+      }
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentLang = urlParams.get('lang') || localStorage.getItem('webLang') || 'en';
+
+    function applyLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('webLang', lang);
+
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const key = el.getAttribute('data-i18n');
+        if (i18n[lang][key]) el.innerText = i18n[lang][key];
+      });
+
+      document.getElementById('btnEN').classList.toggle('active', lang === 'en');
+      document.getElementById('btnTR').classList.toggle('active', lang === 'tr');
+    }
+
+    document.getElementById('btnEN').addEventListener('click', () => applyLanguage('en'));
+    document.getElementById('btnTR').addEventListener('click', () => applyLanguage('tr'));
+
+    async function loadMetadata() {
+      const code = window.location.pathname.split('/').pop();
+      try {
+        const res = await fetch('/api/meta/' + code, {
+          headers: { 'bypass-tunnel-reminder': 'true' }
+        });
+        const data = await res.json();
+        
+        document.getElementById('fileName').innerText = data.name;
+        document.getElementById('fileSize').innerText = data.sizeFormatted;
+        document.getElementById('typeIcon').innerText = data.isFolder ? '📁' : '📄';
+        document.getElementById('downloadBtn').href = '/download/' + code;
+
+        applyLanguage(currentLang);
+      } catch (err) {
+        document.getElementById('fileName').innerText = "Unavailable";
+        document.getElementById('fileSize').innerText = i18n[currentLang].hostDisconnected;
+        document.getElementById('downloadBtn').style.display = 'none';
+      }
+    }
+
+    loadMetadata();
+  </script>
+</body>
+</html>

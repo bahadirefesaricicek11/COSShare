@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>COSShare</title>
+  <style>
+    :root {
+      --background: #090a0f;
+      --card: #12141d;
+      --card-hover: #181b28;
+      --border: #26293b;
+      --foreground: #f1f5f9;
+      --muted: #94a3b8;
+      --primary: #818cf8;
+      --primary-bg: rgba(129, 140, 248, 0.1);
+      --emerald: #34d399;
+      --emerald-bg: rgba(52, 211, 153, 0.1);
+      --amber: #fbbf24;
+      --amber-bg: rgba(251, 191, 36, 0.1);
+      --rose: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    /* Outer Wrapper Card */
+    .app-card {
+      width: 100%;
+      max-width: 440px;
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Top Header */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+    }
+
+    .app-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--foreground);
+      letter-spacing: -0.02em;
+    }
+
+    /* Controls (Lang & Mode Toggles) */
+    .controls-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    /* Language & Mode Toggle Pills */
+    .lang-switch,
+    .mode-toggle-container {
+      display: flex;
+      background: var(--background);
+      border: 1px solid var(--border);
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .lang-btn,
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active,
+    .mode-btn.active {
+      background: var(--border);
+      color: var(--foreground);
+    }
+
+    .mode-toggle-bar {
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Drop Zone Grid */
+    .drop-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .drop-zone {
+      border: 1px dashed var(--border);
+      background-color: var(--background);
+      padding: 20px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .drop-zone:hover {
+      border-color: var(--primary);
+      background-color: var(--card-hover);
+    }
+
+    .drop-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .drop-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--foreground);
+    }
+
+    .drop-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Active Sharing Section */
+    .status-card {
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      background-color: var(--background);
+      padding: 16px;
+      display: none;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      background: var(--primary-bg);
+      color: var(--primary);
+    }
+
+    .status-badge.active {
+      background: var(--emerald-bg);
+      color: var(--emerald);
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    .status-badge.active.pulse {
+      animation: pulseAnim 1.5s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .file-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Link URL Box */
+    .url-box {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      color: var(--emerald);
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      padding: 10px;
+      word-break: break-all;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .url-box:hover {
+      border-color: var(--primary);
+    }
+
+    /* QR Code Container */
+    .qr-container {
+      margin: 14px auto 0 auto;
+      background: #ffffff;
+      padding: 6px;
+      border: 1px solid var(--border);
+      width: 116px;
+      height: 116px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-container img {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Action Buttons */
+    .aero-btn {
+      width: 100%;
+      margin-top: 14px;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background-color: var(--primary-bg);
+      color: var(--foreground);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .aero-btn:hover {
+      background-color: rgba(129, 140, 248, 0.2);
+    }
+
+    .aero-btn.stop {
+      background-color: rgba(248, 113, 113, 0.1);
+      color: var(--rose);
+    }
+
+    .aero-btn.stop:hover {
+      background-color: rgba(248, 113, 113, 0.2);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--card);
+      color: var(--emerald);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+      transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .toast.show {
+      bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-card">
+    <div class="app-header">
+      <div>
+        <p class="eyebrow" data-i18n="eyebrow">P2P File Transfer</p>
+        <h1 class="app-title">COSShare</h1>
+      </div>
+      
+      <div class="controls-row">
+        <div class="mode-toggle-container">
+          <button id="modeGlobalBtn" class="mode-btn active">WAN</button>
+          <button id="modeLanBtn" class="mode-btn">LAN</button>
+        </div>
+        <div class="lang-switch">
+          <button class="lang-btn active" id="langEN">EN</button>
+          <button class="lang-btn" id="langTR">TR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drop Zone Grid -->
+    <div class="drop-grid">
+      <div class="drop-zone" id="dropZoneFile">
+        <div class="drop-icon">📄</div>
+        <div class="drop-title" data-i18n="shareFile">Share File</div>
+        <div class="drop-sub" data-i18n="dropFileSub">Click or drag file</div>
+      </div>
+
+      <div class="drop-zone" id="dropZoneFolder">
+        <div class="drop-icon">📁</div>
+        <div class="drop-title" data-i18n="shareFolder">Share Folder</div>
+        <div class="drop-sub" data-i18n="dropFolderSub">Click or drag folder</div>
+      </div>
+    </div>
+
+    <!-- Status & Share Details -->
+    <div class="status-card" id="statusCard">
+      <div class="status-row">
+        <span class="status-badge" id="statusBadge">Initializing</span>
+        <span class="file-name" id="fileNameDisplay">--</span>
+      </div>
+
+      <div class="url-box" id="urlBox">Generating tunnel link...</div>
+
+      <div class="qr-container" id="qrContainer">
+        <img id="qrImage" alt="Scan to download" />
+      </div>
+
+      <button class="aero-btn stop" id="stopBtn" data-i18n="stopBtn">Stop Sharing</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" data-i18n="toastCopied">Link copied to clipboard!</div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
